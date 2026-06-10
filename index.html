@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f6f2ea" />
+<title>節奏 · 每日行動系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#1a1714; --paper:#f6f2ea; --card:#fffdf8;
+    --line:#e3dccd; --muted:#8a8073;
+    --dusk:#5b6a8f; --dawn:#d98a4e; --noon:#c9a227; --eve:#7a6a9c; --night:#3a4255;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{background:var(--paper); color:var(--ink); font-family:'Noto Sans TC',sans-serif; padding-bottom:40px; -webkit-text-size-adjust:100%;}
+  input:focus{outline:2px solid var(--ink); outline-offset:1px;}
+  button{font-family:inherit; cursor:pointer;}
+  button:focus-visible{outline:2px solid var(--ink); outline-offset:2px;}
+  header{position:sticky; top:0; z-index:10; background:var(--paper); border-bottom:1px solid var(--line); padding:16px 20px 12px; max-width:640px; margin:0 auto;}
+  .brandRow{display:flex; align-items:baseline; gap:10px;}
+  .brand{font-family:'Noto Serif TC',serif; font-weight:700; font-size:26px; letter-spacing:2px;}
+  .tagline{font-size:13px; color:var(--muted); letter-spacing:1px;}
+  .dateNav{display:flex; align-items:center; justify-content:space-between; margin-top:14px;}
+  .navBtn{width:40px; height:40px; border-radius:12px; border:1px solid var(--line); background:var(--card); font-size:22px; color:var(--ink); line-height:1;}
+  .dateCenter{text-align:center;}
+  .dateMain{font-family:'Noto Serif TC',serif; font-weight:700; font-size:19px;}
+  .todayBtn{margin-top:4px; font-size:12px; color:var(--dusk); background:none; border:none; text-decoration:underline;}
+  .progWrap{display:flex; align-items:center; gap:10px; margin-top:14px;}
+  .progTrack{flex:1; height:6px; border-radius:99px; background:var(--line); overflow:hidden;}
+  .progFill{height:100%; background:var(--ink); transition:width .4s ease; width:0;}
+  .progLabel{font-size:13px; font-variant-numeric:tabular-nums; color:var(--muted); min-width:34px; text-align:right;}
+  .saveHint{font-size:11.5px; color:var(--muted); margin-top:6px; letter-spacing:.3px;}
+  main{max-width:640px; margin:0 auto; padding:8px 20px;}
+  section{margin-top:30px;}
+  @media (prefers-reduced-motion:no-preference){section{animation:rise .5s ease both;}}
+  @keyframes rise{from{opacity:0; transform:translateY(8px);}to{opacity:1; transform:none;}}
+  .secHead{display:flex; align-items:center; gap:14px; margin-bottom:14px;}
+  .secNum{font-family:'Noto Serif TC',serif; font-weight:700; font-size:15px; color:#fff; width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .secEyebrow{font-size:12px; color:var(--muted); letter-spacing:2px;}
+  .secTitle{font-family:'Noto Serif TC',serif; font-weight:700; font-size:21px; margin:2px 0 0;}
+  .items{display:flex; flex-direction:column; gap:8px;}
+  .row{display:flex; align-items:center; gap:12px; width:100%; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:13px 15px; transition:background .2s;}
+  .rowCol{flex-direction:column; align-items:stretch; gap:9px;}
+  .rowInline{display:flex; align-items:center; gap:12px; background:none; border:none; padding:0; width:100%; text-align:left;}
+  .rowDone{background:#f0ede4;}
+  .box{flex-shrink:0; width:24px; height:24px; border-radius:7px; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:700;}
+  .rowLabel{font-size:15.5px; line-height:1.45; color:var(--ink);}
+  .labelDone{color:var(--muted); text-decoration:line-through;}
+  input.field{width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:15px; background:#fff; color:var(--ink); font-family:inherit;}
+  footer{text-align:center; margin-top:40px; padding-top:20px; border-top:1px solid var(--line); font-family:'Noto Serif TC',serif; font-size:14px; color:var(--muted); letter-spacing:1px;}
+  .loading{text-align:center; padding:60px; color:var(--muted);}
+  .setupBox{max-width:560px; margin:40px auto; padding:24px; background:var(--card); border:1px solid var(--line); border-radius:16px;}
+  .setupBox h2{font-family:'Noto Serif TC',serif; margin-top:0;}
+  .setupBox input{width:100%; border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-size:14px; margin:10px 0; font-family:inherit;}
+  .setupBox button{background:var(--ink); color:#fff; border:none; border-radius:10px; padding:12px 18px; font-size:15px;}
+  .setupBox p{font-size:13.5px; color:var(--muted); line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ───────────────────────────────────────────────
+//  設定：第一次打開會要求貼上 Apps Script 網址
+//  （存在這台裝置，下次免填。每台裝置填一次）
+// ───────────────────────────────────────────────
+const API_KEY = 'rhythm_api_url';
+let API = localStorage.getItem(API_KEY) || '';
+
+// ── 區塊定義 ──
+const SECTIONS = [
+  { id:'night_plan', eyebrow:'前一晚', title:'寫下隔天早上要做什麼', accent:'var(--dusk)', items:[
+    { k:'p1', kind:'checkinput', label:'可量化的任務', ph:'例：8:00–8:30 列出今天養雞目標幾個' },
+    { k:'p2', kind:'check', label:'準備好環境、調整自己' },
+    { k:'p3', kind:'check', label:'關閉或刪除會誘惑的程式' },
+    { k:'p4', kind:'checkinput', label:'想拖延時就…', ph:'例：站起來走到窗邊深呼吸三次' },
+    { k:'p5', kind:'input', label:'寫一句啟動的理由', ph:'例：啟動一件事，把事情跑動起來' },
+  ]},
+  { id:'morning', eyebrow:'早上起來', title:'啟動晨間節奏', accent:'var(--dawn)', items:[
+    { k:'m1', kind:'check', label:'鬧鐘響後五分鐘內起床' },
+    { k:'m2', kind:'check', label:'喝杯茶' },
+    { k:'m3', kind:'check', label:'拉伸 3–5 分鐘' },
+    { k:'m4', kind:'check', label:'不接受訊息' },
+    { k:'m5', kind:'checkinput', label:'寫下一個必勝（必完成）的任務', ph:'今天非完成不可的一件事' },
+  ]},
+  { id:'noon_reset', eyebrow:'下午感覺中斷', title:'下午復位', accent:'var(--noon)', items:[
+    { k:'n1', kind:'check', label:'輕運動 10–20 分鐘' },
+    { k:'n2', kind:'check', label:'吃點清淡的，30 分鐘' },
+    { k:'n3', kind:'input', label:'復位卡 1 · 上午完成什麼', ph:'上午完成了…' },
+    { k:'n4', kind:'input', label:'復位卡 2 · 下午最重要的事', ph:'下午最重要的是…' },
+    { k:'n5', kind:'input', label:'復位卡 3 · 我要幾點開始', ph:'例：14:30 開始' },
+  ]},
+  { id:'eve_reset', eyebrow:'晚上感覺中斷', title:'晚間復位', accent:'var(--eve)', items:[
+    { k:'e1', kind:'check', label:'輕運動 10–20 分鐘' },
+    { k:'e2', kind:'check', label:'吃點清淡的，30 分鐘' },
+    { k:'e3', kind:'input', label:'復位卡 1 · 下午完成什麼', ph:'下午完成了…' },
+    { k:'e4', kind:'input', label:'復位卡 2 · 晚上最重要的事', ph:'晚上最重要的是…' },
+    { k:'e5', kind:'input', label:'復位卡 3 · 我要幾點開始', ph:'例：20:00 開始' },
+  ]},
+  { id:'review', eyebrow:'晚間復盤', title:'回顧今天', accent:'var(--night)', items:[
+    { k:'r1', kind:'input', label:'今天最有效的動作', ph:'…' },
+    { k:'r2', kind:'input', label:'今天最大阻力', ph:'…' },
+    { k:'r3', kind:'input', label:'阻力出現時我做了什麼', ph:'…' },
+    { k:'r4', kind:'input', label:'明天刪除哪個動作', ph:'…' },
+    { k:'r5', kind:'input', label:'明天保留哪個動作', ph:'…' },
+  ]},
+];
+
+// ── 日期工具 ──
+const pad = n => String(n).padStart(2,'0');
+const todayKey = () => { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const fmtDate = k => { const [y,m,d]=k.split('-'); const wd=['日','一','二','三','四','五','六'][new Date(+y,+m-1,+d).getDay()]; return `${+m}月${+d}日 · 週${wd}`; };
+const shiftDay = (k,n) => { const [y,m,d]=k.split('-').map(Number); const dt=new Date(y,m-1,d+n); return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`; };
+
+const blankDay = () => { const o={}; SECTIONS.forEach(s=>s.items.forEach(it=>{ o[it.k]= it.kind==='check'?false: it.kind==='checkinput'?{c:false,t:''}:''; })); return o; };
+
+// ── 後端讀寫（用 text/plain 避開 CORS 預檢）──
+async function loadDay(dateK){
+  if(!API) return blankDay();
+  try{
+    const r = await fetch(`${API}?date=${encodeURIComponent(dateK)}`, { method:'GET' });
+    const j = await r.json();
+    return j && j.data ? { ...blankDay(), ...j.data } : blankDay();
+  }catch(e){ console.warn('load fail', e); return blankDay(); }
+}
+async function saveDay(dateK, data){
+  if(!API) return false;
+  try{
+    await fetch(API, {
+      method:'POST',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // 關鍵：不觸發預檢
+      body: JSON.stringify({ date: dateK, data })
+    });
+    return true;
+  }catch(e){ console.warn('save fail', e); return false; }
+}
+
+// ── 狀態 ──
+let state = { dateK: todayKey(), data: blankDay(), loading:true, saved:'idle' };
+let saveTimer = null;
+
+function setSaved(v){ state.saved=v; const el=document.getElementById('saveHint'); if(el) el.textContent = v==='saving'?'儲存中…': v==='done'?'✓ 已同步': '手機與電腦自動同步'; }
+
+function scheduleSave(){
+  setSaved('saving');
+  clearTimeout(saveTimer);
+  const d = state.dateK, payload = { ...state.data };
+  saveTimer = setTimeout(async ()=>{
+    const ok = await saveDay(d, payload);
+    setSaved(ok?'done':'idle');
+    if(ok) setTimeout(()=>setSaved('idle'),1400);
+  }, 600);
+}
+
+function update(k,v){ state.data[k]=v; renderProgress(); scheduleSave(); }
+
+async function gotoDate(k){
+  state.dateK=k; state.loading=true; render();
+  state.data = await loadDay(k); state.loading=false; render();
+}
+
+// ── 進度 ──
+function calcProgress(){
+  let total=0, done=0;
+  SECTIONS.forEach(s=>s.items.forEach(it=>{ total++; const v=state.data[it.k];
+    if(it.kind==='check') done+= v?1:0;
+    else if(it.kind==='checkinput') done+= (v&&v.c)?1:0;
+    else done+= (v&&v.trim())?1:0;
+  }));
+  return Math.round(done/total*100);
+}
+function renderProgress(){ const p=calcProgress(); const f=document.getElementById('progFill'); const l=document.getElementById('progLabel'); if(f) f.style.width=p+'%'; if(l) l.textContent=p+'%'; }
+
+// ── 畫面 ──
+function render(){
+  const app = document.getElementById('app');
+  if(!API){ renderSetup(app); return; }
+  const isToday = state.dateK===todayKey();
+  app.innerHTML = `
+    <header>
+      <div class="brandRow"><span class="brand">節奏</span><span class="tagline">每日行動系統</span></div>
+      <div class="dateNav">
+        <button class="navBtn" id="prev" aria-label="前一天">‹</button>
+        <div class="dateCenter">
+          <div class="dateMain">${fmtDate(state.dateK)}</div>
+          ${isToday?'':'<button class="todayBtn" id="today">回到今天</button>'}
+        </div>
+        <button class="navBtn" id="next" aria-label="後一天">›</button>
+      </div>
+      <div class="progWrap"><div class="progTrack"><div class="progFill" id="progFill"></div></div><span class="progLabel" id="progLabel">0%</span></div>
+      <div class="saveHint" id="saveHint">手機與電腦自動同步</div>
+    </header>
+    ${ state.loading ? '<div class="loading">載入中…</div>' : `<main>${SECTIONS.map(renderSection).join('')}<footer>一次一個動作。把事情跑動起來。</footer></main>` }
+  `;
+  document.getElementById('prev').onclick = ()=>gotoDate(shiftDay(state.dateK,-1));
+  document.getElementById('next').onclick = ()=>gotoDate(shiftDay(state.dateK,1));
+  const t=document.getElementById('today'); if(t) t.onclick=()=>gotoDate(todayKey());
+  if(!state.loading){ bindItems(); renderProgress(); setSaved(state.saved); }
+}
+
+function renderSection(s, si){
+  return `<section><div class="secHead"><span class="secNum" style="background:${s.accent}">${pad(si+1)}</span>
+    <div><div class="secEyebrow">${s.eyebrow}</div><h2 class="secTitle">${s.title}</h2></div></div>
+    <div class="items">${s.items.map(it=>renderItem(it,s.accent)).join('')}</div></section>`;
+}
+function esc(x){ return (x||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function renderItem(it, accent){
+  const v = state.data[it.k];
+  if(it.kind==='check'){
+    const on=!!v;
+    return `<button class="row ${on?'rowDone':''}" data-k="${it.k}" data-act="check">
+      <span class="box" style="${on?`background:${accent};border-color:${accent}`:''}">${on?'✓':''}</span>
+      <span class="rowLabel ${on?'labelDone':''}">${it.label}</span></button>`;
+  }
+  if(it.kind==='checkinput'){
+    const c=v&&v.c, t=(v&&v.t)||'';
+    return `<div class="row rowCol ${c?'rowDone':''}">
+      <button class="rowInline" data-k="${it.k}" data-act="checkinput-toggle">
+        <span class="box" style="${c?`background:${accent};border-color:${accent}`:''}">${c?'✓':''}</span>
+        <span class="rowLabel ${c?'labelDone':''}">${it.label}</span></button>
+      <input class="field" data-k="${it.k}" data-act="checkinput-text" value="${esc(t)}" placeholder="${esc(it.ph)}" /></div>`;
+  }
+  return `<div class="row rowCol"><label class="rowLabel">${it.label}</label>
+    <input class="field" data-k="${it.k}" data-act="input" value="${esc(v)}" placeholder="${esc(it.ph)}" /></div>`;
+}
+function bindItems(){
+  document.querySelectorAll('[data-act="check"]').forEach(el=>el.onclick=()=>{ update(el.dataset.k, !state.data[el.dataset.k]); render(); });
+  document.querySelectorAll('[data-act="checkinput-toggle"]').forEach(el=>el.onclick=()=>{ const cur=state.data[el.dataset.k]||{c:false,t:''}; update(el.dataset.k,{c:!cur.c,t:cur.t}); render(); });
+  document.querySelectorAll('[data-act="checkinput-text"]').forEach(el=>el.oninput=()=>{ const cur=state.data[el.dataset.k]||{c:false,t:''}; update(el.dataset.k,{c:cur.c,t:el.value}); });
+  document.querySelectorAll('[data-act="input"]').forEach(el=>el.oninput=()=>{ update(el.dataset.k, el.value); });
+}
+
+// ── 第一次設定畫面 ──
+function renderSetup(app){
+  app.innerHTML = `<div class="setupBox">
+    <h2>第一次使用：連結你的資料</h2>
+    <p>貼上你的 Google Apps Script 網址（以 <b>/exec</b> 結尾）。這個網址只會存在這台裝置，下次自動記住。每台裝置（手機、電腦）各填一次。</p>
+    <input id="apiInput" placeholder="https://script.google.com/macros/s/.../exec" />
+    <button id="apiSave">連結並開始</button>
+  </div>`;
+  document.getElementById('apiSave').onclick = ()=>{
+    const v=document.getElementById('apiInput').value.trim();
+    if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(v)){ alert('網址格式怪怪的，要以 /exec 結尾喔'); return; }
+    localStorage.setItem(API_KEY, v); API=v; gotoDate(todayKey());
+  };
+}
+
+// ── 啟動 ──
+(async ()=>{ if(API){ state.data=await loadDay(state.dateK); } state.loading=false; render(); })();
+</script>
+</body>
+</html>
