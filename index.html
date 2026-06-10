@@ -21,6 +21,7 @@
   button:focus-visible{outline:2px solid var(--ink); outline-offset:2px;}
   header{position:sticky; top:0; z-index:10; background:var(--paper); border-bottom:1px solid var(--line); padding:16px 20px 12px; max-width:640px; margin:0 auto;}
   .brandRow{display:flex; align-items:baseline; gap:10px;}
+  .brandRow .todayBtn{align-self:center;}
   .brand{font-family:'Noto Serif TC',serif; font-weight:700; font-size:26px; letter-spacing:2px;}
   .tagline{font-size:13px; color:var(--muted); letter-spacing:1px;}
   .dateNav{display:flex; align-items:center; justify-content:space-between; margin-top:14px;}
@@ -118,31 +119,37 @@ const shiftDay = (k,n) => { const [y,m,d]=k.split('-').map(Number); const dt=new
 const blankDay = () => { const o={}; SECTIONS.forEach(s=>s.items.forEach(it=>{ o[it.k]= it.kind==='check'?false: it.kind==='checkinput'?{c:false,t:''}:''; })); return o; };
 
 // ── 後端讀寫（用 text/plain 避開 CORS 預檢）──
+let lastError = '';
 async function loadDay(dateK){
   if(!API) return blankDay();
   try{
     const r = await fetch(`${API}?date=${encodeURIComponent(dateK)}`, { method:'GET' });
+    if(!r.ok) throw new Error('HTTP '+r.status);
     const j = await r.json();
+    lastError = '';
     return j && j.data ? { ...blankDay(), ...j.data } : blankDay();
-  }catch(e){ console.warn('load fail', e); return blankDay(); }
+  }catch(e){ console.warn('load fail', e); lastError = '讀取失敗：'+e.message; return blankDay(); }
 }
 async function saveDay(dateK, data){
   if(!API) return false;
   try{
-    await fetch(API, {
+    const r = await fetch(API, {
       method:'POST',
       headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // 關鍵：不觸發預檢
       body: JSON.stringify({ date: dateK, data })
     });
+    lastError = '';
     return true;
-  }catch(e){ console.warn('save fail', e); return false; }
+  }catch(e){ console.warn('save fail', e); lastError = '儲存失敗：'+e.message; return false; }
 }
 
 // ── 狀態 ──
 let state = { dateK: todayKey(), data: blankDay(), loading:true, saved:'idle' };
 let saveTimer = null;
 
-function setSaved(v){ state.saved=v; const el=document.getElementById('saveHint'); if(el) el.textContent = v==='saving'?'儲存中…': v==='done'?'✓ 已同步': '手機與電腦自動同步'; }
+function setSaved(v){ state.saved=v; const el=document.getElementById('saveHint'); if(!el) return;
+  if(lastError){ el.textContent = '⚠ '+lastError+'（點右上設定檢查連結）'; el.style.color='#b4452f'; return; }
+  el.style.color=''; el.textContent = v==='saving'?'儲存中…': v==='done'?'✓ 已同步': '手機與電腦自動同步'; }
 
 function scheduleSave(){
   setSaved('saving');
@@ -181,7 +188,7 @@ function render(){
   const isToday = state.dateK===todayKey();
   app.innerHTML = `
     <header>
-      <div class="brandRow"><span class="brand">節奏</span><span class="tagline">每日行動系統</span></div>
+      <div class="brandRow"><span class="brand">節奏</span><span class="tagline">每日行動系統</span><button class="todayBtn" id="settings" style="margin-left:auto">設定</button></div>
       <div class="dateNav">
         <button class="navBtn" id="prev" aria-label="前一天">‹</button>
         <div class="dateCenter">
@@ -198,6 +205,7 @@ function render(){
   document.getElementById('prev').onclick = ()=>gotoDate(shiftDay(state.dateK,-1));
   document.getElementById('next').onclick = ()=>gotoDate(shiftDay(state.dateK,1));
   const t=document.getElementById('today'); if(t) t.onclick=()=>gotoDate(todayKey());
+  const sb=document.getElementById('settings'); if(sb) sb.onclick=()=>renderSetup(document.getElementById('app'), true);
   if(!state.loading){ bindItems(); renderProgress(); setSaved(state.saved); }
 }
 
@@ -233,19 +241,25 @@ function bindItems(){
   document.querySelectorAll('[data-act="input"]').forEach(el=>el.oninput=()=>{ update(el.dataset.k, el.value); });
 }
 
-// ── 第一次設定畫面 ──
-function renderSetup(app){
+// ── 設定畫面（第一次 & 隨時可開）──
+function renderSetup(app, canCancel){
+  const cur = API || '';
   app.innerHTML = `<div class="setupBox">
-    <h2>第一次使用：連結你的資料</h2>
-    <p>貼上你的 Google Apps Script 網址（以 <b>/exec</b> 結尾）。這個網址只會存在這台裝置，下次自動記住。每台裝置（手機、電腦）各填一次。</p>
-    <input id="apiInput" placeholder="https://script.google.com/macros/s/.../exec" />
+    <h2>連結你的資料</h2>
+    <p>貼上你的 Google Apps Script 網址（以 <b>/exec</b> 結尾）。<b>手機跟電腦要貼一模一樣的網址。</b>建議從電腦直接複製過來，不要手打。</p>
+    <input id="apiInput" placeholder="https://script.google.com/macros/s/.../exec" value="${esc(cur)}" />
+    ${cur?`<p style="word-break:break-all">目前存的網址：<br><b>${esc(cur)}</b></p>`:''}
     <button id="apiSave">連結並開始</button>
+    ${cur?'<button id="apiClear" style="background:none;border:1px solid var(--line);color:var(--muted);margin-left:8px">清除網址</button>':''}
+    ${canCancel?'<button id="apiCancel" style="background:none;border:none;color:var(--muted);margin-left:8px">返回</button>':''}
   </div>`;
   document.getElementById('apiSave').onclick = ()=>{
     const v=document.getElementById('apiInput').value.trim();
     if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(v)){ alert('網址格式怪怪的，要以 /exec 結尾喔'); return; }
-    localStorage.setItem(API_KEY, v); API=v; gotoDate(todayKey());
+    localStorage.setItem(API_KEY, v); API=v; lastError=''; gotoDate(todayKey());
   };
+  const clr=document.getElementById('apiClear'); if(clr) clr.onclick=()=>{ localStorage.removeItem(API_KEY); API=''; renderSetup(app,false); };
+  const cancel=document.getElementById('apiCancel'); if(cancel) cancel.onclick=()=>render();
 }
 
 // ── 啟動 ──
