@@ -179,7 +179,7 @@ body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;ba
    2. 輸入新密碼 → 按「產生雜湊」
    3. 把產生的字串貼到下面這行的引號內，存檔
 */
-const PW_HASH = 'ad746a9b3acbe5b88e0ed4c75f003fdced494c404e7278e518083a78f4d1712b';
+const PW_HASH = '369b3fd7119217c47c336e004bce655c2f0fd0299c86a086be2ab6788c881312';
 
 async function sha256(str){
   const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
