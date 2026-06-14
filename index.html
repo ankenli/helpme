@@ -1,585 +1,378 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>顧問後台・客戶風險分析</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f6f2ea" />
+<title>節奏 · 每日行動系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet" />
 <style>
 :root{
-  --ink:#16324F; --ink-soft:#5A6B7B; --bg:#EEF1F4; --card:#FFFFFF; --line:#DDE5EB;
-  --ok:#2C8C82; --warn:#E8A33D; --bad:#D95D4E; --accent:#16324F;
+--ink:#1a1714; --paper:#f6f2ea; --card:#fffdf8;
+--line:#e3dccd; --muted:#8a8073;
+--dusk:#5b6a8f; --dawn:#d98a4e; --noon:#c9a227; --eve:#7a6a9c; --night:#3a4255;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
-
-/* lock screen */
-.lock{position:fixed;inset:0;background:linear-gradient(135deg,#16324F,#0E2235);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px}
-.lock-box{background:var(--card);border-radius:18px;padding:34px 28px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.lock-icon{font-size:40px;margin-bottom:8px}
-.lock-box h1{font-size:21px;margin-bottom:4px}
-.lock-box p{font-size:13px;color:var(--ink-soft);margin-bottom:18px}
-.lock-box input{width:100%;padding:13px 14px;font-size:16px;border:1.5px solid var(--line);border-radius:10px;text-align:center}
-.lock-box>button{width:100%;margin-top:14px;padding:13px;font-size:15px;font-weight:700;border:none;border-radius:10px;background:var(--ink);color:#fff;cursor:pointer}
-.lock-err{color:var(--bad);font-size:13px;margin-top:10px;min-height:18px}
-.lock-box details{margin-top:18px;text-align:left;font-size:12px;color:var(--ink-soft)}
-.lock-box summary{cursor:pointer;font-weight:600}
-.lock-box .mini{margin-top:8px;padding:7px 12px;font-size:12px;border:1.5px solid var(--line);border-radius:8px;background:#FBFCFD;cursor:pointer}
-.lock-box code{background:#EEF1F4;padding:1px 5px;border-radius:4px;font-size:11px}
-
-/* setup gate */
-.gate{max-width:460px;margin:60px auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 24px;display:none}
-.gate.show{display:block}
-.gate h1{font-size:20px;margin-bottom:6px}
-.gate p{font-size:13px;color:var(--ink-soft);margin-bottom:18px}
-.gate label{display:block;font-size:13px;font-weight:600;margin:12px 0 5px}
-.gate input{width:100%;padding:11px 13px;font-size:14px;border:1.5px solid var(--line);border-radius:9px}
-.gate button{width:100%;margin-top:18px;padding:13px;font-size:15px;font-weight:700;border:none;border-radius:10px;background:var(--ink);color:#fff;cursor:pointer}
-.gate .err{color:var(--bad);font-size:13px;margin-top:10px;min-height:18px}
-.gate details{margin-top:16px;font-size:12px;color:var(--ink-soft)}
-.gate summary{cursor:pointer;font-weight:600}
-
-/* app layout */
-.app{display:none;height:100vh;display:none;grid-template-columns:330px 1fr}
-.app.on{display:grid}
-.sidebar{background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100vh}
-.side-head{padding:16px;border-bottom:1px solid var(--line)}
-.side-head h2{font-size:16px}
-.side-head .tools{display:flex;gap:8px;margin-top:10px}
-.side-head select,.side-head input{flex:1;padding:7px 9px;font-size:12.5px;border:1.5px solid var(--line);border-radius:8px;background:#FBFCFD}
-.side-head button{padding:7px 10px;font-size:12.5px;border:1.5px solid var(--line);border-radius:8px;background:#FBFCFD;cursor:pointer}
-.list{overflow-y:auto;flex:1}
-.client{padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
-.client:hover{background:#F4F7F9}
-.client.sel{background:#EBF1F4;border-left:3px solid var(--ink)}
-.client .top{display:flex;justify-content:space-between;align-items:center}
-.client .nm{font-weight:700;font-size:14.5px}
-.client .sc{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
-.client .meta{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
-.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
-
-.main{overflow-y:auto;height:100vh;padding:24px 28px 60px}
-.empty{color:var(--ink-soft);text-align:center;margin-top:120px;font-size:14px}
-.detail h1{font-size:22px;margin-bottom:2px}
-.detail .subline{font-size:13px;color:var(--ink-soft);margin-bottom:18px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
-.stat .k{font-size:11.5px;color:var(--ink-soft)}
-.stat .v{font-size:18px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
-
-.section{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:18px 20px;margin-bottom:16px}
-.section h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:7px}
-.layer{display:flex;align-items:center;gap:10px;margin-bottom:9px}
-.layer .ln{width:64px;font-size:13px;font-weight:600}
-.layer .track{flex:1;height:9px;border-radius:5px;background:#EAEFF3;overflow:hidden}
-.layer .track i{display:block;height:100%;border-radius:5px}
-.layer .pc{width:42px;text-align:right;font-size:12.5px;font-variant-numeric:tabular-nums}
-
-.prio{display:flex;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--line)}
-.prio:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
-.prio .rank{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center}
-.prio .body{font-size:13.5px}
-.prio .body b{color:var(--bad)}
-.prio .body .tip{color:var(--ink-soft);font-size:12.5px}
-
-.ai-btn{padding:12px 18px;font-size:14px;font-weight:700;border:none;border-radius:10px;background:linear-gradient(135deg,#16324F,#2C5578);color:#fff;cursor:pointer}
-.ai-btn:disabled{opacity:.5;cursor:wait}
-.chat{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
-.chat-empty{color:var(--ink-soft);font-size:13px;line-height:1.7}
-.msg{max-width:92%;padding:11px 14px;border-radius:12px;font-size:13.5px;line-height:1.75;white-space:pre-wrap}
-.msg.ai{background:#F1F5F8;border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
-.msg.me{background:var(--ink);color:#fff;align-self:flex-end;border-bottom-right-radius:4px;white-space:normal}
-.msg.typing{color:var(--ink-soft);font-style:italic}
-.msg .cp{display:block;margin-top:8px;font-size:11.5px;color:var(--ok);background:none;border:none;padding:0;cursor:pointer;text-align:left}
-.chat-input{display:flex;gap:8px}
-.chat-input input{flex:1;padding:11px 13px;font-size:14px;border:1.5px solid var(--line);border-radius:10px;background:#FBFCFD}
-.chat-input button{padding:11px 18px;font-size:14px;font-weight:700;border:none;border-radius:10px;background:var(--ink);color:#fff;cursor:pointer}
-.chat-input button:disabled{opacity:.5;cursor:wait}
-.copy-line{margin-top:10px;padding:8px 12px;font-size:12.5px;border:1.5px solid var(--line);border-radius:8px;background:#FBFCFD;cursor:pointer}
-.badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px}
-.badge.ok{background:rgba(44,140,130,.12);color:var(--ok)}
-.badge.warn{background:rgba(232,163,61,.15);color:#B07A1E}
-.badge.bad{background:rgba(217,93,78,.12);color:var(--bad)}
-@media(max-width:760px){ .app.on{grid-template-columns:1fr} .sidebar{height:auto;max-height:42vh} .main{height:auto} }
+*{box-sizing:border-box;}
+html,body{margin:0;}
+body{background:var(--paper); color:var(--ink); font-family:'Noto Sans TC',sans-serif; padding-bottom:40px; -webkit-text-size-adjust:100%;}
+  input:focus{outline:2px solid var(--ink); outline-offset:1px;}
+  input:focus,textarea:focus{outline:2px solid var(--ink); outline-offset:1px;}
+button{font-family:inherit; cursor:pointer;}
+button:focus-visible{outline:2px solid var(--ink); outline-offset:2px;}
+header{position:sticky; top:0; z-index:10; background:var(--paper); border-bottom:1px solid var(--line); padding:16px 20px 12px; max-width:640px; margin:0 auto;}
+  .brandRow{display:flex; align-items:baseline; gap:10px;}
+  .brandRow .todayBtn{align-self:center;}
+  .brandRow{display:flex; align-items:center; gap:10px;}
+.brand{font-family:'Noto Serif TC',serif; font-weight:700; font-size:26px; letter-spacing:2px;}
+  .tagline{font-size:13px; color:var(--muted); letter-spacing:1px;}
+  .headTabs{display:flex; gap:14px; margin-left:auto; align-items:center;}
+  .navlink{font-size:13px; color:var(--muted); background:none; border:none; padding:4px 2px;}
+  .navlink.active{color:var(--ink); font-weight:500;}
+.dateNav{display:flex; align-items:center; justify-content:space-between; margin-top:14px;}
+.navBtn{width:40px; height:40px; border-radius:12px; border:1px solid var(--line); background:var(--card); font-size:22px; color:var(--ink); line-height:1;}
+.dateCenter{text-align:center;}
+@@ -58,6 +59,28 @@
+.setupBox input{width:100%; border:1px solid var(--line); border-radius:10px; padding:11px 12px; font-size:14px; margin:10px 0; font-family:inherit;}
+.setupBox button{background:var(--ink); color:#fff; border:none; border-radius:10px; padding:12px 18px; font-size:15px;}
+.setupBox p{font-size:13.5px; color:var(--muted); line-height:1.6;}
+  /* 願景橫幅 */
+  .vbanner{display:block; width:100%; text-align:left; background:var(--night); color:#f2efe6; border:none; border-radius:16px; padding:14px 16px; margin-top:18px;}
+  .vbanner .vlab{font-size:11px; letter-spacing:2px; opacity:.7;}
+  .vbanner .vmain{font-size:15px; margin-top:3px; line-height:1.45;}
+  .vbanner .vanti{font-size:12.5px; margin-top:9px; opacity:.85; line-height:1.45;}
+  /* 重啟頁 */
+  .reboot{max-width:640px; margin:0 auto; padding:8px 20px 40px;}
+  .rintro{color:var(--muted); font-size:13.5px; line-height:1.7; margin-top:14px;}
+  .rstage{margin-top:28px;}
+  .rstage h3{font-family:'Noto Serif TC',serif; font-size:19px; margin:0 0 4px; display:flex; align-items:center; gap:10px;}
+  .rstageNum{width:30px; height:30px; border-radius:9px; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-family:'Noto Serif TC',serif; font-weight:700; flex-shrink:0;}
+  .rsub{font-size:12.5px; color:var(--muted); margin:2px 0 12px; line-height:1.6;}
+  .rfield{margin-bottom:12px;}
+  .rfield label{display:block; font-size:14px; margin-bottom:6px; color:var(--ink); line-height:1.5;}
+  .rfield textarea,.rfield input{width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:15px; font-family:inherit; background:#fff; color:var(--ink);}
+  .rfield textarea{min-height:70px; line-height:1.6; resize:vertical;}
+  .rquestions{list-style:none; padding:14px 16px; margin:0; background:var(--card); border:1px solid var(--line); border-radius:14px;}
+  .rquestions li{font-size:14px; line-height:1.75; color:var(--ink);}
+  .rquestions .qt{color:var(--noon); font-weight:700; font-variant-numeric:tabular-nums; margin-right:8px;}
+  .rdone{display:flex; align-items:center; gap:12px; margin-top:26px; flex-wrap:wrap;}
+  .rdoneBtn{background:var(--ink); color:#fff; border:none; border-radius:10px; padding:11px 18px; font-size:15px;}
+  .rstamp{font-size:12.5px; color:var(--muted);}
 </style>
 </head>
 <body>
-
-<!-- 密碼鎖：通過才顯示後台 -->
-<div class="lock" id="lock">
-  <div class="lock-box">
-    <div class="lock-icon">🔒</div>
-    <h1>顧問後台</h1>
-    <p>請輸入存取密碼</p>
-    <input id="pw" type="password" placeholder="密碼" onkeydown="if(event.key==='Enter')unlock()" autocomplete="current-password">
-    <button onclick="unlock()">解鎖</button>
-    <div class="lock-err" id="lockErr"></div>
-    <details>
-      <summary>第一次使用 / 想改密碼？</summary>
-      <p style="margin-top:8px">本頁用 SHA-256 雜湊保護，密碼不會以明文存在檔案裡。要設定或更改密碼：在密碼欄輸入你想要的新密碼後，按下方「產生雜湊」，把產生的字串貼回 HTML 檔案裡 <code>PW_HASH</code> 那一行，存檔即可。</p>
-      <button class="mini" onclick="makeHash()">產生雜湊</button>
-      <div id="hashOut" style="margin-top:8px;font-size:11px;word-break:break-all;color:var(--ink)"></div>
-    </details>
-  </div>
-</div>
-
-
-<!-- 設定門檻 -->
-<div class="gate" id="gate">
-  <h1>顧問後台登入</h1>
-  <p>這個頁面只給你自己用，會讀取 Google Sheets 的客戶資料並生成分析建議。</p>
-
-  <label>後台讀取網址（Apps Script 的 /exec 網址）</label>
-  <input id="gasUrl" placeholder="https://script.google.com/macros/s/xxxx/exec">
-
-  <label>後台通行碼（Code.gs 裡設定的 ADMIN_TOKEN）</label>
-  <input id="token" type="password" placeholder="你設定的通行碼">
-
-  <label>Claude API Key（生成 AI 建議用，sk-ant-...）</label>
-  <input id="apiKey" type="password" placeholder="sk-ant-...（不填也能用規則式分析）">
-
-  <button onclick="enter()">進入後台</button>
-  <div class="err" id="gateErr"></div>
-
-  <details>
-    <summary>資料安全說明</summary>
-    <p style="margin-top:8px">通行碼與 API Key 只會存在你這台裝置的瀏覽器（localStorage），不會上傳到任何第三方。客戶資料只在你的瀏覽器與 Google／Anthropic 之間傳輸。建議只在自己的私人電腦使用本頁。</p>
-  </details>
-</div>
-
-<!-- 主畫面 -->
-<div class="app" id="app">
-  <aside class="sidebar">
-    <div class="side-head">
-      <h2>客戶名單 <span id="count" style="font-size:12px;color:var(--ink-soft)"></span></h2>
-      <div class="tools">
-        <select id="sortBy" onchange="renderList()">
-          <option value="score">防護分數低→高</option>
-          <option value="time">最新填寫</option>
-          <option value="gap">缺口大→小</option>
-        </select>
-        <button onclick="loadData()">↻</button>
-      </div>
-      <div class="tools">
-        <input id="search" placeholder="搜尋姓名 / LINE ID" oninput="renderList()">
-      </div>
-    </div>
-    <div class="list" id="list"></div>
-  </aside>
-
-  <main class="main" id="main">
-    <div class="empty" id="empty">← 從左邊選一位客戶開始分析</div>
-    <div class="detail" id="detail" style="display:none"></div>
-  </main>
-</div>
-
+@@ -66,10 +89,10 @@
 <script>
-/* ===== 存取密碼（SHA-256 雜湊）=====
-   預設密碼是 anken-change-me，請務必更改：
-   1. 打開本頁 → 密碼鎖的「第一次使用/想改密碼」
-   2. 輸入新密碼 → 按「產生雜湊」
-   3. 把產生的字串貼到下面這行的引號內，存檔
-*/
-const PW_HASH = '369b3fd7119217c47c336e004bce655c2f0fd0299c86a086be2ab6788c881312';
+// ───────────────────────────────────────────────
+//  設定：第一次打開會要求貼上 Apps Script 網址
+//  （存在這台裝置，下次免填。每台裝置填一次）
+// ───────────────────────────────────────────────
+const API_KEY = 'rhythm_api_url';
+let API = localStorage.getItem(API_KEY) || '';
+const REBOOT_KEY = '__reboot__'; // 願景/重啟資料的後端 key（跨天保留）
 
-async function sha256(str){
-  const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+// ── 區塊定義 ──
+const SECTIONS = [
+@@ -86,27 +109,31 @@
+{ k:'m3', kind:'check', label:'拉伸 3–5 分鐘' },
+{ k:'m4', kind:'check', label:'不接受訊息' },
+{ k:'m5', kind:'checkinput', label:'寫下一個必勝（必完成）的任務', ph:'今天非完成不可的一件事' },
+    { k:'m6', kind:'input', label:'身分宣言 · 今天我是這種人', ph:'例：我是那種把分享價值當呼吸一樣自然的人' },
+]},
+{ id:'noon_reset', eyebrow:'下午感覺中斷', title:'下午復位', accent:'var(--noon)', items:[
+{ k:'n1', kind:'check', label:'輕運動 10–20 分鐘' },
+{ k:'n2', kind:'check', label:'吃點清淡的，30 分鐘' },
+{ k:'n3', kind:'input', label:'復位卡 1 · 上午完成什麼', ph:'上午完成了…' },
+{ k:'n4', kind:'input', label:'復位卡 2 · 下午最重要的事', ph:'下午最重要的是…' },
+{ k:'n5', kind:'input', label:'復位卡 3 · 我要幾點開始', ph:'例：14:30 開始' },
+    { k:'n6', kind:'input', label:'覺察 · 我現在在逃避什麼', ph:'誠實寫一句…' },
+]},
+{ id:'eve_reset', eyebrow:'晚上感覺中斷', title:'晚間復位', accent:'var(--eve)', items:[
+{ k:'e1', kind:'check', label:'輕運動 10–20 分鐘' },
+{ k:'e2', kind:'check', label:'吃點清淡的，30 分鐘' },
+{ k:'e3', kind:'input', label:'復位卡 1 · 下午完成什麼', ph:'下午完成了…' },
+{ k:'e4', kind:'input', label:'復位卡 2 · 晚上最重要的事', ph:'晚上最重要的是…' },
+{ k:'e5', kind:'input', label:'復位卡 3 · 我要幾點開始', ph:'例：20:00 開始' },
+    { k:'e6', kind:'input', label:'覺察 · 今天哪些行動只是在保護舊的我', ph:'…' },
+]},
+{ id:'review', eyebrow:'晚間復盤', title:'回顧今天', accent:'var(--night)', items:[
+{ k:'r1', kind:'input', label:'今天最有效的動作', ph:'…' },
+{ k:'r2', kind:'input', label:'今天最大阻力', ph:'…' },
+{ k:'r3', kind:'input', label:'阻力出現時我做了什麼', ph:'…' },
+{ k:'r4', kind:'input', label:'明天刪除哪個動作', ph:'…' },
+{ k:'r5', kind:'input', label:'明天保留哪個動作', ph:'…' },
+    { k:'r6', kind:'input', label:'今天最有活力 / 最像行屍走肉的時刻', ph:'…' },
+]},
+];
+
+@@ -120,49 +147,51 @@
+
+// ── 後端讀寫（用 text/plain 避開 CORS 預檢）──
+let lastError = '';
+async function loadDay(dateK){
+  if(!API) return blankDay();
+async function loadKey(dateK){
+  if(!API) return null;
+try{
+const r = await fetch(`${API}?date=${encodeURIComponent(dateK)}`, { method:'GET' });
+if(!r.ok) throw new Error('HTTP '+r.status);
+const j = await r.json();
+lastError = '';
+    return j && j.data ? { ...blankDay(), ...j.data } : blankDay();
+  }catch(e){ console.warn('load fail', e); lastError = '讀取失敗：'+e.message; return blankDay(); }
+    return (j && j.data) ? j.data : null;
+  }catch(e){ console.warn('load fail', e); lastError = '讀取失敗：'+e.message; return null; }
 }
-
-async function unlock(){
-  const pw=document.getElementById('pw').value;
-  const err=document.getElementById('lockErr');
-  if(!pw){ err.textContent='請輸入密碼'; return; }
-  const h=await sha256(pw);
-  if(h===PW_HASH){
-    sessionStorage.setItem('unlocked','1');
-    document.getElementById('lock').style.display='none';
-    document.getElementById('gate').classList.add('show');
-  }else{
-    err.textContent='密碼錯誤';
-    document.getElementById('pw').value='';
-  }
-}
-
-async function makeHash(){
-  const pw=document.getElementById('pw').value;
-  const out=document.getElementById('hashOut');
-  if(!pw){ out.textContent='請先在上面密碼欄輸入想要的新密碼'; return; }
-  const h=await sha256(pw);
-  out.innerHTML=`新雜湊（複製到 PW_HASH）：<br><b>${h}</b>`;
-}
-
-/* 同一個分頁解鎖過就不用再輸入 */
-window.addEventListener('DOMContentLoaded',()=>{
-  if(sessionStorage.getItem('unlocked')==='1'){
-    document.getElementById('lock').style.display='none';
-    document.getElementById('gate').classList.add('show');
-  }
-});
-
-const LS='advisor_backend_cfg';
-let CFG={gas:'',token:'',apiKey:''};
-let DATA=[], SEL=null;
-
-/* ---------- 登入 ---------- */
-window.addEventListener('load',()=>{
-  try{
-    const s=JSON.parse(localStorage.getItem(LS)||'{}');
-    if(s.gas){ document.getElementById('gasUrl').value=s.gas; }
-    if(s.token){ document.getElementById('token').value=s.token; }
-    if(s.apiKey){ document.getElementById('apiKey').value=s.apiKey; }
-  }catch(e){}
-});
-
-function enter(){
-  CFG.gas=document.getElementById('gasUrl').value.trim();
-  CFG.token=document.getElementById('token').value.trim();
-  CFG.apiKey=document.getElementById('apiKey').value.trim();
-  const err=document.getElementById('gateErr');
-  if(!CFG.gas||!CFG.token){ err.textContent='請填寫後台網址與通行碼'; return; }
-  localStorage.setItem(LS,JSON.stringify(CFG));
-  err.textContent='讀取中…';
-  loadData(true);
-}
-
-/* ---------- 讀取資料 ---------- */
-async function loadData(firstTime){
-  const err=document.getElementById('gateErr');
-  try{
-    const url=CFG.gas+(CFG.gas.includes('?')?'&':'?')+'token='+encodeURIComponent(CFG.token);
-    const res=await fetch(url);
-    const json=await res.json();
-    if(!json.ok){ if(err)err.textContent='讀取失敗：'+(json.error||'通行碼錯誤'); return; }
-    DATA=json.rows||[];
-    document.getElementById('gate').style.display='none';
-    document.getElementById('app').classList.add('on');
-    document.getElementById('count').textContent='（'+DATA.length+' 位）';
-    renderList();
-  }catch(e){
-    if(err)err.textContent='連線失敗，請確認網址正確且已部署為「所有人」可存取';
-  }
-}
-
-/* ---------- 工具 ---------- */
-const g=(o,k)=>{ const v=o[k]; return (v===''||v==null)?0:(isNaN(+v)?v:+v); };
-function scoreColor(s){ return s>=80?'var(--ok)':s>=55?'var(--warn)':'var(--bad)'; }
-function ratioColor(r){ return r>=80?'var(--ok)':r>=40?'var(--warn)':'var(--bad)'; }
-function parseRatios(str){ // "55 / 60 / 48 / 70 / 25"
-  const a=String(str||'').split('/').map(x=>parseInt(x.trim())||0);
-  return {醫:a[0]||0,保:a[1]||0,退:a[2]||0,理:a[3]||0,傳:a[4]||0};
-}
-
-/* ---------- 列表 ---------- */
-function renderList(){
-  const sort=document.getElementById('sortBy').value;
-  const q=document.getElementById('search').value.trim().toLowerCase();
-  let rows=DATA.slice();
-  if(q) rows=rows.filter(r=>String(r['姓名']||'').toLowerCase().includes(q)||String(r['LINE ID']||'').toLowerCase().includes(q));
-  rows.sort((a,b)=>{
-    if(sort==='score') return g(a,'防護分數')-g(b,'防護分數');
-    if(sort==='gap')   return g(b,'總缺口(萬)')-g(a,'總缺口(萬)');
-    return new Date(b['填寫時間'])-new Date(a['填寫時間']);
-  });
-  const list=document.getElementById('list');
-  if(!rows.length){ list.innerHTML='<div style="padding:20px;color:var(--ink-soft);font-size:13px">沒有符合的客戶</div>'; return; }
-  list.innerHTML=rows.map(r=>{
-    const sc=g(r,'防護分數');
-    const sel=SEL&&SEL._row===r._row?'sel':'';
-    return `<div class="client ${sel}" onclick="select(${r._row})">
-      <div class="top"><span class="nm">${r['姓名']||'(未填名)'}</span>
-        <span class="sc" style="color:${scoreColor(sc)}">${sc}</span></div>
-      <div class="meta"><span class="dot" style="background:${scoreColor(sc)}"></span>${r['性別']||''} ${g(r,'年齡')}歲・缺口 ${g(r,'總缺口(萬)')}萬・${r['保障清楚度']||'—'}</div>
-    </div>`;
-  }).join('');
-}
-
-function clientKey(r){
-  // 用 姓名+填寫時間 當唯一識別，避免同名客戶混淆
-  return (r['姓名']||'')+'|'+(r['填寫時間']||'')+'|'+(r._row||'');
-}
-
-function select(row){
-  SEL=DATA.find(r=>r._row===row);
-  chatHistory=[];   // 先清空，稍後從雲端載入
-  renderList();
-  renderDetail();
-  loadChatHistory();  // 載入這位客戶過去的 AI 對話
-}
-
-async function loadChatHistory(){
-  if(!SEL) return;
-  try{
-    const url=CFG.gas+(CFG.gas.includes('?')?'&':'?')+'token='+encodeURIComponent(CFG.token)
-      +'&action=chat&client='+encodeURIComponent(clientKey(SEL));
-    const res=await fetch(url);
-    const json=await res.json();
-    if(json.ok && json.messages && json.messages.length){
-      chatHistory=json.messages;
-      renderChatHistory();
-    }
-  }catch(e){ /* 載入失敗就當作沒有歷史，不影響使用 */ }
-}
-
-function renderChatHistory(){
-  const chat=document.getElementById('chat');
-  const empty=document.getElementById('chatEmpty');
-  if(empty) empty.remove();
-  if(!chat) return;
-  chat.innerHTML='';
-  chatHistory.forEach((m,i)=>{
-    if(m.role==='assistant'){
-      addAiMsg(chat, m.content, true);
-    }else{
-      // 第一筆 user 是系統產生的完整建議書指令，不顯示原文，只顯示「（已生成建議書）」
-      if(i===0){
-        const tag=document.createElement('div');
-        tag.className='msg me'; tag.style.opacity='.7'; tag.style.fontSize='12px';
-        tag.textContent='📋 已生成完整建議書';
-        chat.appendChild(tag);
-      }else{
-        const me=document.createElement('div');
-        me.className='msg me'; me.textContent=m.content;
-        chat.appendChild(me);
-      }
-    }
-  });
-  // 有歷史就顯示追問框、按鈕改文字
-  const inputWrap=document.getElementById('chatInputWrap');
-  if(inputWrap) inputWrap.style.display='flex';
-  const btn=document.getElementById('aiBtn');
-  if(btn) btn.textContent='重新生成建議書';
-  chat.scrollTop=chat.scrollHeight;
-}
-
-/* ---------- 規則式分析 ---------- */
-function ruleAnalysis(r){
-  const R=parseRatios(r['五層防護力(醫/保/退/理/傳)']);
-  const prios=[];
-  const income=g(r,'年收入(萬)'), totalAssets=g(r,'現金存款(萬)')+g(r,'投資資產(萬)')+g(r,'不動產(萬)');
-
-  // 醫療逐項
-  const medFix=[];
-  if(g(r,'醫療日額(元)')<5000) medFix.push(`住院日額僅 ${g(r,'醫療日額(元)')} 元（建議 5,000）`);
-  if(g(r,'實支實付(萬/次)')<20) medFix.push(`實支實付僅 ${g(r,'實支實付(萬/次)')} 萬（建議 20）`);
-  if(g(r,'重大傷病(萬)')<100) medFix.push(`重大傷病 ${g(r,'重大傷病(萬)')} 萬（最少 100）`);
-  if(g(r,'癌症(萬)')<100) medFix.push(`癌症一次金 ${g(r,'癌症(萬)')} 萬（最少 100）`);
-  if(g(r,'長照月給付(萬)')<5) medFix.push(`長照月給付 ${g(r,'長照月給付(萬)')} 萬（每月需求約 5）`);
-  if(r['門診手術']==='沒有'||r['門診手術']==='不確定') medFix.push('門診手術理賠'+(r['門診手術']==='沒有'?'缺漏':'待確認'));
-
-  const cand=[
-    {layer:'醫療',r:R.醫,title:'醫療防護',detail:medFix.length?medFix.join('、'):'各項接近達標',
-     tip:'地基層，最優先。可從實支實付＋重大傷病＋癌症一次金切入，長照另案規劃。'},
-    {layer:'保障',r:R.保,title:'壽險保障',detail:`壽險 ${g(r,'壽險(萬)')} 萬，建議至少年薪 10 倍（約 ${income*10} 萬）`,
-     tip:'有扶養家人或房貸者必補，定期壽險槓桿最高。'},
-    {layer:'退休',r:R.退,title:'退休準備',detail:`理想月退 ${g(r,'退休理想月生活費(萬)')} 萬，現有退休金 ${g(r,'退休後生活金(萬)')} 萬`,
-     tip:'距離退休越遠越好談複利，年金險或投資型保單切入。'},
-    {layer:'理財',r:R.理,title:'投資理財',detail:`年投入 ${g(r,'年投資投入(萬)')} 萬（建議年薪 30%＝${Math.round(income*0.3)} 萬）`,
-     tip:'先確認緊急預備金足夠，再談被動收入累積。'},
-    {layer:'傳承',r:R.傳,title:'資產傳承',detail:totalAssets>1333?`總資產約 ${totalAssets} 萬已逾免稅額，傳承規劃：${r['傳承規劃']||'—'}`:`總資產約 ${totalAssets} 萬，暫以累積為主`,
-     tip:totalAssets>1333?'用壽險預留稅源，理賠金不計入遺產、不需完稅即理賠。':'資產達 2,000 萬以上再積極切入。'}
-  ];
-  // 防護力越低排越前；同分時依金字塔由下而上
-  const order={醫療:0,保障:1,退休:2,理財:3,傳承:4};
-  cand.sort((a,b)=> a.r-b.r || order[a.layer]-order[b.layer]);
-  return {ratios:R, prios:cand};
-}
-
-/* ---------- 明細畫面 ---------- */
-function renderDetail(){
-  const r=SEL;
-  document.getElementById('empty').style.display='none';
-  const d=document.getElementById('detail');
-  d.style.display='';
-  const sc=g(r,'防護分數');
-  const A=ruleAnalysis(r);
-  const R=A.ratios;
-  const layerRow=(name,val)=>`<div class="layer"><span class="ln">${name}</span>
-     <span class="track"><i style="width:${val}%;background:${ratioColor(val)}"></i></span>
-     <span class="pc">${val}%</span></div>`;
-
-  const prioHtml=A.prios.slice(0,3).map((p,i)=>`<div class="prio">
-     <span class="rank">${i+1}</span>
-     <div class="body"><b>${p.title}（防護力 ${p.r}%）</b><br>${p.detail}<br><span class="tip">👉 ${p.tip}</span></div>
-   </div>`).join('');
-
-  d.innerHTML=`
-    <h1>${r['姓名']||'(未填名)'} <span class="badge ${sc>=80?'ok':sc>=55?'warn':'bad'}">${sc} 分</span></h1>
-    <div class="subline">${r['性別']||''}・${g(r,'年齡')}歲・${r['婚姻']||''}・扶養 ${g(r,'扶養人數')} 人　|　LINE：${r['LINE ID']||'—'}　|　填寫：${fmtDate(r['填寫時間'])}</div>
-
-    <div class="grid">
-      <div class="stat"><div class="k">年收入</div><div class="v">${g(r,'年收入(萬)')}<small style="font-size:12px"> 萬</small></div></div>
-      <div class="stat"><div class="k">月開銷</div><div class="v">${g(r,'月開銷(萬)')}<small style="font-size:12px"> 萬</small></div></div>
-      <div class="stat"><div class="k">總資產</div><div class="v">${g(r,'現金存款(萬)')+g(r,'投資資產(萬)')+g(r,'不動產(萬)')}<small style="font-size:12px"> 萬</small></div></div>
-      <div class="stat"><div class="k">負債</div><div class="v">${g(r,'負債(萬)')}<small style="font-size:12px"> 萬</small></div></div>
-      <div class="stat"><div class="k">保障清楚度</div><div class="v" style="font-size:15px">${r['保障清楚度']||'—'}</div></div>
-      <div class="stat"><div class="k">資金缺口</div><div class="v" style="color:var(--bad)">${g(r,'總缺口(萬)')}<small style="font-size:12px"> 萬</small></div></div>
-    </div>
-
-    <div class="section">
-      <h3>五層防護力</h3>
-      ${layerRow('醫療',R.醫)}${layerRow('保障',R.保)}${layerRow('退休',R.退)}${layerRow('理財',R.理)}${layerRow('傳承',R.傳)}
-    </div>
-
-    <div class="section">
-      <h3>🎯 規則式：建議補強優先順序</h3>
-      ${prioHtml}
-    </div>
-
-    <div class="section">
-      <h3>🤖 AI 顧問督導 <span class="badge ${CFG.apiKey?'ok':'warn'}">${CFG.apiKey?'已啟用':'需 API Key'}</span></h3>
-      <div class="chat" id="chat">
-        <div class="chat-empty" id="chatEmpty">${CFG.apiKey?'按下方按鈕生成這位客戶的完整建議書，之後可以像跟督導討論一樣繼續追問（例如「他說沒預算怎麼回？」「長照那塊幫我多寫一點」）。':'未填 Claude API Key，僅顯示規則式分析。可重新整理頁面回登入畫面補上。'}</div>
-      </div>
-      <button class="ai-btn" id="aiBtn" onclick="genAI()" ${CFG.apiKey?'':'disabled'}>生成這位客戶的完整建議書</button>
-      <div class="chat-input" id="chatInputWrap" style="display:none">
-        <input id="chatInput" placeholder="繼續追問…（按 Enter 送出）" onkeydown="if(event.key==='Enter')askFollow()">
-        <button onclick="askFollow()" id="chatSend">送出</button>
-      </div>
-    </div>
-  `;
-}
-
-function fmtDate(d){ try{ const x=new Date(d); return `${x.getMonth()+1}/${x.getDate()} ${String(x.getHours()).padStart(2,'0')}:${String(x.getMinutes()).padStart(2,'0')}`; }catch(e){ return d; } }
-
-/* ---------- AI 對話督導 ---------- */
-let chatHistory=[];   // 與 Claude 的完整對話（含 system 設定的脈絡）
-
-const SYSTEM_PROMPT=`你是一位資深的台灣保險與財務規劃顧問督導，正在一對一指導一位業務同仁，協助他服務剛完成「人生五大需求金字塔」風險試算的客戶。你的所有回答都是「給業務同仁看的內部討論」，不是給客戶看的推銷文。
-
-原則：
-- 用繁體中文、務實、像資深前輩在帶人的口吻。
-- 金字塔補強順序由下而上：醫療→保障→退休→理財→傳承。
-- 提到商品時只講「類型方向」（如實支實付醫療險、定期壽險、長照險、年金險等），不要編造特定公司商品名稱、保費數字或法規細節，不確定就用通則描述。
-- 業務同仁的風格是「分享生活、溫暖不硬銷」，建議的話術要符合這個調性。
-- 回答精簡聚焦，不要每次都重複客戶全部資料。`;
-
-function genAI(){
-  // 首次生成完整建議書
-  const r=SEL;
-  chatHistory=[];  // 切換客戶或重新生成時重置
-  const chat=document.getElementById('chat');
-  if(chat) chat.innerHTML='';  // 清掉畫面上載入的舊對話，重新開始一輪
-  const firstPrompt=`這位客戶的完整資料如下：
-${buildProfile(r)}
-
-請產出一份完整建議書，分三段、每段加標題：
-【一、補強優先順序】依金字塔由下而上，結合他防護力最低的層級，列出前 3 個最該優先處理的缺口，並說明為什麼這個順序對「這位客戶」合理。
-【二、推薦商品方向】針對缺口建議可切入的險種類別方向。
-【三、預期反對問題與應對】預測他最可能的 2~3 個猶豫，各給一句同理又專業的回應方向。`;
-  sendToClaude(firstPrompt, '生成這位客戶的完整建議書');
-}
-
-function askFollow(){
-  const input=document.getElementById('chatInput');
-  const q=input.value.trim();
-  if(!q) return;
-  input.value='';
-  sendToClaude(q, null, q);  // 第三參數=畫面上顯示的使用者訊息
-}
-
-async function sendToClaude(promptText, btnLabel, showUserMsg){
-  const chat=document.getElementById('chat');
-  const empty=document.getElementById('chatEmpty');
-  if(empty) empty.remove();
-  const btn=document.getElementById('aiBtn');
-  const sendBtn=document.getElementById('chatSend');
-  const inputWrap=document.getElementById('chatInputWrap');
-
-  // 顯示使用者訊息（追問時）
-  if(showUserMsg){
-    const me=document.createElement('div');
-    me.className='msg me'; me.textContent=showUserMsg;
-    chat.appendChild(me);
-  }
-
-  // typing 指示
-  const typing=document.createElement('div');
-  typing.className='msg ai typing'; typing.textContent='督導思考中…';
-  chat.appendChild(typing);
-  chat.scrollTop=chat.scrollHeight;
-
-  if(btn){ btn.disabled=true; }
-  if(sendBtn){ sendBtn.disabled=true; }
-
-  // 累積對話脈絡
-  chatHistory.push({role:'user', content:promptText});
-
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+async function saveDay(dateK, data){
+async function saveKey(dateK, data){
+if(!API) return false;
+try{
+    const r = await fetch(API, {
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':CFG.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens:1500,
-        system:SYSTEM_PROMPT,
-        messages:chatHistory
-      })
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // 關鍵：不觸發預檢
+      body: JSON.stringify({ date: dateK, data })
     });
-    const data=await res.json();
-    typing.remove();
-    if(data.error){
-      addAiMsg(chat,'⚠️ 生成失敗：'+(data.error.message||JSON.stringify(data.error)));
-      chatHistory.pop();  // 失敗就把這輪 user 拿掉，不污染脈絡
-    }else{
-      const text=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n')||'（沒有取得回應）';
-      chatHistory.push({role:'assistant', content:text});
-      addAiMsg(chat,text,true);
-      // 把這一輪（user + assistant）寫回 Google Sheets
-      saveChatToSheet([
-        {role:'user', content:promptText},
-        {role:'assistant', content:text}
-      ]);
-    }
-  }catch(e){
-    typing.remove();
-    addAiMsg(chat,'⚠️ 連線失敗：'+e.message);
-    chatHistory.pop();
+    await fetch(API, { method:'POST',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify({ date: dateK, data }) });
+lastError = '';
+return true;
+}catch(e){ console.warn('save fail', e); lastError = '儲存失敗：'+e.message; return false; }
+}
+async function loadDay(dateK){ const d = await loadKey(dateK); return d ? { ...blankDay(), ...d } : blankDay(); }
+async function loadReboot(){ const d = await loadKey(REBOOT_KEY); return d || {}; }
+
+// ── 狀態 ──
+let state = { dateK: todayKey(), data: blankDay(), loading:true, saved:'idle' };
+let saveTimer = null;
+let state = { view:'daily', dateK: todayKey(), data: blankDay(), reboot:{}, loading:true, saved:'idle' };
+let saveTimer = null, rebootTimer = null;
+
+function setSaved(v){ state.saved=v; const el=document.getElementById('saveHint'); if(!el) return;
+if(lastError){ el.textContent = '⚠ '+lastError+'（點右上設定檢查連結）'; el.style.color='#b4452f'; return; }
+el.style.color=''; el.textContent = v==='saving'?'儲存中…': v==='done'?'✓ 已同步': '手機與電腦自動同步'; }
+
+function scheduleSave(){
+  setSaved('saving');
+  clearTimeout(saveTimer);
+  setSaved('saving'); clearTimeout(saveTimer);
+const d = state.dateK, payload = { ...state.data };
+  saveTimer = setTimeout(async ()=>{
+    const ok = await saveDay(d, payload);
+    setSaved(ok?'done':'idle');
+    if(ok) setTimeout(()=>setSaved('idle'),1400);
+  }, 600);
+  saveTimer = setTimeout(async ()=>{ const ok = await saveKey(d, payload);
+    setSaved(ok?'done':'idle'); if(ok) setTimeout(()=>setSaved('idle'),1400); }, 600);
+}
+function scheduleSaveReboot(){
+  setSaved('saving'); clearTimeout(rebootTimer);
+  const payload = { ...state.reboot };
+  rebootTimer = setTimeout(async ()=>{ const ok = await saveKey(REBOOT_KEY, payload);
+    setSaved(ok?'done':'idle'); if(ok) setTimeout(()=>setSaved('idle'),1400); }, 600);
+}
+
+function update(k,v){ state.data[k]=v; renderProgress(); scheduleSave(); }
+function updateReboot(k,v){ state.reboot[k]=v; scheduleSaveReboot(); }
+
+async function gotoDate(k){
+state.dateK=k; state.loading=true; render();
+@@ -181,40 +210,68 @@
+}
+function renderProgress(){ const p=calcProgress(); const f=document.getElementById('progFill'); const l=document.getElementById('progLabel'); if(f) f.style.width=p+'%'; if(l) l.textContent=p+'%'; }
+
+// ── 畫面 ──
+function esc(x){ return (x||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+// ── 路由 ──
+function render(){
+const app = document.getElementById('app');
+if(!API){ renderSetup(app); return; }
+  if(state.view==='reboot'){ renderReboot(app); return; }
+  renderDaily(app);
+}
+
+// ── 每日頁 ──
+function vbannerHTML(){
+  const rb = state.reboot||{};
+  const mission=(rb.mission||'').trim(), anti=(rb.anti_vision||'').trim();
+  if(!mission && !anti){
+    return `<button class="vbanner" id="vbanner" style="background:var(--dusk)">
+      <div class="vlab">主線任務 · 反向願景</div>
+      <div class="vmain">還沒設定 — 點這裡做第一次「重啟」，找出你真正要往哪去 →</div></button>`;
   }
-
-  if(btn){ btn.disabled=false; btn.textContent='重新生成建議書'; }
-  if(sendBtn){ sendBtn.disabled=false; }
-  if(inputWrap){ inputWrap.style.display='flex'; }  // 生成後顯示追問框
-  chat.scrollTop=chat.scrollHeight;
+  return `<button class="vbanner" id="vbanner">
+    <div class="vlab">主線任務</div>
+    <div class="vmain">${esc(mission)||'（未填）'}</div>
+    ${anti?`<div class="vanti">⚠ 不改變的話：${esc(anti)}</div>`:''}</button>`;
 }
 
-function addAiMsg(chat, text, withCopy){
-  const m=document.createElement('div');
-  m.className='msg ai'; m.textContent=text;
-  if(withCopy){
-    const cp=document.createElement('button');
-    cp.className='cp'; cp.textContent='📋 複製';
-    cp.onclick=()=>{ navigator.clipboard.writeText(text); cp.textContent='✓ 已複製'; setTimeout(()=>cp.textContent='📋 複製',2000); };
-    m.appendChild(cp);
+function renderDaily(app){
+const isToday = state.dateK===todayKey();
+app.innerHTML = `
+   <header>
+      <div class="brandRow"><span class="brand">節奏</span><span class="tagline">每日行動系統</span><button class="todayBtn" id="settings" style="margin-left:auto">設定</button></div>
+      <div class="brandRow"><span class="brand">節奏</span>
+        <div class="headTabs">
+          <button class="navlink active">每日</button>
+          <button class="navlink" id="navReboot">重啟</button>
+          <button class="navlink" id="settings">設定</button>
+        </div>
+      </div>
+     <div class="dateNav">
+       <button class="navBtn" id="prev" aria-label="前一天">‹</button>
+        <div class="dateCenter">
+          <div class="dateMain">${fmtDate(state.dateK)}</div>
+          ${isToday?'':'<button class="todayBtn" id="today">回到今天</button>'}
+        </div>
+        <div class="dateCenter"><div class="dateMain">${fmtDate(state.dateK)}</div>${isToday?'':'<button class="todayBtn" id="today">回到今天</button>'}</div>
+       <button class="navBtn" id="next" aria-label="後一天">›</button>
+     </div>
+     <div class="progWrap"><div class="progTrack"><div class="progFill" id="progFill"></div></div><span class="progLabel" id="progLabel">0%</span></div>
+     <div class="saveHint" id="saveHint">手機與電腦自動同步</div>
+   </header>
+    ${ state.loading ? '<div class="loading">載入中…</div>' : `<main>${SECTIONS.map(renderSection).join('')}<footer>一次一個動作。把事情跑動起來。</footer></main>` }
+    ${ state.loading ? '<div class="loading">載入中…</div>' : `<main>${vbannerHTML()}${SECTIONS.map(renderSection).join('')}<footer>一次一個動作。把事情跑動起來。</footer></main>` }
+ `;
+document.getElementById('prev').onclick = ()=>gotoDate(shiftDay(state.dateK,-1));
+document.getElementById('next').onclick = ()=>gotoDate(shiftDay(state.dateK,1));
+const t=document.getElementById('today'); if(t) t.onclick=()=>gotoDate(todayKey());
+  const sb=document.getElementById('settings'); if(sb) sb.onclick=()=>renderSetup(document.getElementById('app'), true);
+  if(!state.loading){ bindItems(); renderProgress(); setSaved(state.saved); }
+  document.getElementById('settings').onclick = ()=>renderSetup(document.getElementById('app'), true);
+  document.getElementById('navReboot').onclick = ()=>{ state.view='reboot'; render(); };
+  if(!state.loading){
+    const vb=document.getElementById('vbanner'); if(vb) vb.onclick=()=>{ state.view='reboot'; render(); };
+    bindItems(); renderProgress(); setSaved(state.saved);
   }
-  chat.appendChild(m);
-  chat.scrollTop=chat.scrollHeight;
 }
 
-/* 把對話寫回 Google Sheets（no-cors，背景送出） */
-function saveChatToSheet(messages){
-  if(!SEL) return;
-  try{
-    fetch(CFG.gas,{
-      method:'POST', mode:'no-cors',
-      headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({ action:'chat', token:CFG.token, client:clientKey(SEL), messages:messages })
-    }).catch(()=>{});
-  }catch(e){}
+function renderSection(s, si){
+return `<section><div class="secHead"><span class="secNum" style="background:${s.accent}">${pad(si+1)}</span>
+   <div><div class="secEyebrow">${s.eyebrow}</div><h2 class="secTitle">${s.title}</h2></div></div>
+   <div class="items">${s.items.map(it=>renderItem(it,s.accent)).join('')}</div></section>`;
+}
+function esc(x){ return (x||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function renderItem(it, accent){
+const v = state.data[it.k];
+if(it.kind==='check'){
+@@ -241,7 +298,92 @@
+document.querySelectorAll('[data-act="input"]').forEach(el=>el.oninput=()=>{ update(el.dataset.k, el.value); });
 }
 
-function buildProfile(r){
-  const lines=[
-    `姓名 ${r['姓名']}｜${r['性別']}｜${g(r,'年齡')}歲｜${r['婚姻']}｜扶養 ${g(r,'扶養人數')} 人`,
-    `保障清楚度：${r['保障清楚度']}（「不清楚」代表客戶連自己有什麼保單都不確定）`,
-    `防護分數 ${g(r,'防護分數')}/100，五層防護力（醫/保/退/理/傳）：${r['五層防護力(醫/保/退/理/傳)']}`,
-    `年收入 ${g(r,'年收入(萬)')} 萬｜月開銷 ${g(r,'月開銷(萬)')} 萬｜現金 ${g(r,'現金存款(萬)')} 萬｜投資資產 ${g(r,'投資資產(萬)')} 萬｜不動產 ${g(r,'不動產(萬)')} 萬｜負債 ${g(r,'負債(萬)')} 萬`,
-    `年投資投入 ${g(r,'年投資投入(萬)')} 萬｜年保費 ${g(r,'年保費支出(萬)')} 萬｜被動收入 ${g(r,'被動收入(萬/年)')} 萬/年`,
-    `現有保障——壽險 ${g(r,'壽險(萬)')} 萬｜醫療日額 ${g(r,'醫療日額(元)')} 元｜實支實付 ${g(r,'實支實付(萬/次)')} 萬｜門診手術 ${r['門診手術']}｜重大傷病 ${g(r,'重大傷病(萬)')} 萬｜癌症 ${g(r,'癌症(萬)')} 萬｜意外壽險 ${g(r,'意外壽險(萬)')} 萬｜意外日額 ${g(r,'意外日額(元)')} 元｜意外實支 ${g(r,'意外實支(萬/次)')} 萬｜長照月給付 ${g(r,'長照月給付(萬)')} 萬`,
-    `退休——理想月生活費 ${g(r,'退休理想月生活費(萬)')} 萬｜已備退休金 ${g(r,'退休後生活金(萬)')} 萬`,
-    `傳承規劃：${r['傳承規劃']}`
-  ];
-  return lines.join('\n');
+// ── 設定畫面（第一次 & 隨時可開）──
+// ── 重啟頁 ──
+function rfield(k,label,val,multi){
+  const tag = multi
+    ? `<textarea data-rk="${k}" placeholder="…">${esc(val)}</textarea>`
+    : `<input data-rk="${k}" value="${esc(val)}" placeholder="…" />`;
+  return `<div class="rfield"><label>${label}</label>${tag}</div>`;
 }
+function renderReboot(app){
+  const rb = state.reboot||{};
+  app.innerHTML = `
+    <header>
+      <div class="brandRow"><span class="brand">重啟</span>
+        <div class="headTabs">
+          <button class="navlink" id="navBack">‹ 每日</button>
+          <button class="navlink" id="settings">設定</button>
+        </div>
+      </div>
+      <div class="saveHint" id="saveHint">手機與電腦自動同步</div>
+    </header>
+    <div class="reboot">
+      <p class="rintro">心情糟、想砍掉重練時進來。找個假日，關掉通知，給自己 30 分鐘以上，誠實到痛為止。這頁是跨天保留的，隨時回來看、隨時改。</p>
+
+      <div class="rstage">
+        <h3><span class="rstageNum" style="background:var(--dawn)">1</span>早晨 · 挖出痛點</h3>
+        <div class="rsub">誠實寫。會噁心、會生氣 — 那就是燃料。</div>
+        ${rfield('pain','你最習慣忍受、卻從沒真正解決的鈍痛是什麼？', rb.pain, 1)}
+        ${rfield('complaints','你抱怨最多、卻從沒改變的三件事？', rb.complaints, 1)}
+        ${rfield('reveal','如果有人只看你的行動、不聽你說的話，他會以為你真正想要什麼？', rb.reveal, 1)}
+        ${rfield('hidden','你不敢告訴最尊敬的人的真相是什麼？', rb.hidden, 1)}
+      </div>
+
+      <div class="rstage">
+        <h3><span class="rstageNum" style="background:var(--night)">2</span>反向願景 · 嚇自己</h3>
+        <div class="rsub">5–10 年什麼都不變，最糟的那個平凡星期二：在哪醒來、身體怎樣、第一個念頭、晚上十點躺床上的感覺、錯過誰、別人背後怎麼說你、最大的代價。</div>
+        ${rfield('anti_vision','寫下那個你絕不要的版本', rb.anti_vision, 1)}
+      </div>
+
+      <div class="rstage">
+        <h3><span class="rstageNum" style="background:var(--dusk)">3</span>正向願景 · 換身分</h3>
+        <div class="rsub">三年後若能過完全不同的人生，理想的平凡星期二長什麼樣？</div>
+        ${rfield('vision','寫下你要打造的未來', rb.vision, 1)}
+        ${rfield('identity','身分宣言：那時你深信自己是誰？「我是那種…的人」', rb.identity, 0)}
+      </div>
+
+      <div class="rstage">
+        <h3><span class="rstageNum" style="background:var(--noon)">4</span>白天 · 打斷自動駕駛</h3>
+        <div class="rsub">執行重啟那天，手機每隔幾小時設鬧鐘，響了就停下來問自己：</div>
+        <ul class="rquestions">
+          <li><span class="qt">11:00</span>我現在這樣做，是在逃避什麼？</li>
+          <li><span class="qt">13:30</span>若有人錄下我過去兩小時，會以為我想從人生得到什麼？</li>
+          <li><span class="qt">15:15</span>我是在往討厭的人生、還是想要的人生移動？</li>
+          <li><span class="qt">17:00</span>我假裝不重要、其實最重要的事是什麼？</li>
+          <li><span class="qt">19:30</span>今天哪些行動只是在保護舊的我？</li>
+          <li><span class="qt">21:00</span>今天我什麼時候最有活力？什麼時候像行屍走肉？</li>
+        </ul>
+      </div>
+
+      <div class="rstage">
+        <h3><span class="rstageNum" style="background:var(--eve)">5</span>晚上 · 整合 + 三層鏡頭</h3>
+        <div class="rsub">把洞見鎖進方向。</div>
+        ${rfield('enemy','一直在背後操控你的真正敵人是誰？給它取個名字（恐懼怪獸／舒適牢籠／受害者）', rb.enemy, 0)}
+        ${rfield('lens_year','一年後 — 要證明我打破了舊模式，必須發生的一個具體事實', rb.lens_year, 0)}
+        ${rfield('lens_month','這個月 — 為了讓那件事發生，我要打的關卡', rb.lens_month, 0)}
+        ${rfield('lens_tomorrow','明天 — 新身分會自然做的 2–3 個行動', rb.lens_tomorrow, 1)}
+      </div>
+
+      <div class="rstage">
+        <h3><span class="rstageNum" style="background:var(--ink)">6</span>遊戲化 · 每天瞄一眼</h3>
+        <div class="rsub">這兩條會顯示在「每日」頁最上面，每天提醒你往哪走。</div>
+        ${rfield('mission','主線任務（年度）— 一個能證明你徹底打破舊模式的目標', rb.mission, 0)}
+        ${rfield('constraints','守則 / 紅線 — 為了願景，我絕不碰的事', rb.constraints, 0)}
+      </div>
+
+      <div class="rdone">
+        <button class="rdoneBtn" id="rdoneBtn">標記今天完成一次重啟</button>
+        <span class="rstamp">${rb.updated?('上次重啟：'+esc(rb.updated)):'還沒做過完整重啟'}</span>
+      </div>
+    </div>`;
+  document.getElementById('navBack').onclick = ()=>{ state.view='daily'; render(); };
+  document.getElementById('settings').onclick = ()=>renderSetup(document.getElementById('app'), true);
+  document.querySelectorAll('[data-rk]').forEach(el=>el.oninput=()=>updateReboot(el.dataset.rk, el.value));
+  document.getElementById('rdoneBtn').onclick = ()=>{ updateReboot('updated', new Date().toLocaleDateString('zh-TW')); render(); };
+  setSaved(state.saved);
+}
+
+// ── 設定畫面 ──
+function renderSetup(app, canCancel){
+const cur = API || '';
+app.innerHTML = `<div class="setupBox">
+@@ -253,17 +395,22 @@
+   ${cur?'<button id="apiClear" style="background:none;border:1px solid var(--line);color:var(--muted);margin-left:8px">清除網址</button>':''}
+   ${canCancel?'<button id="apiCancel" style="background:none;border:none;color:var(--muted);margin-left:8px">返回</button>':''}
+ </div>`;
+  document.getElementById('apiSave').onclick = ()=>{
+  document.getElementById('apiSave').onclick = async ()=>{
+const v=document.getElementById('apiInput').value.trim();
+if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(v)){ alert('網址格式怪怪的，要以 /exec 結尾喔'); return; }
+    localStorage.setItem(API_KEY, v); API=v; lastError=''; gotoDate(todayKey());
+    localStorage.setItem(API_KEY, v); API=v; lastError='';
+    state.reboot = await loadReboot();
+    gotoDate(todayKey());
+};
+const clr=document.getElementById('apiClear'); if(clr) clr.onclick=()=>{ localStorage.removeItem(API_KEY); API=''; renderSetup(app,false); };
+const cancel=document.getElementById('apiCancel'); if(cancel) cancel.onclick=()=>render();
+}
+
+// ── 啟動 ──
+(async ()=>{ if(API){ state.data=await loadDay(state.dateK); } state.loading=false; render(); })();
+(async ()=>{
+  if(API){ state.reboot = await loadReboot(); state.data = await loadDay(state.dateK); }
+  state.loading=false; render();
+})();
 </script>
 </body>
 </html>
